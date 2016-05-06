@@ -1,3 +1,6 @@
+## ABOUT: SNPinfo aggregates SNP data from the GWAS Catalogue and dbSNP given a list of rsIDs
+## or gene names.
+
 import os
 import sys
 import argparse
@@ -8,8 +11,10 @@ import time
 
 os.chdir('C:\\Users\\Annelise\\myRepos\\The-BEST-GWAS')
 
-##dbSNP ENTRY CLASS-------------------------------------------------------------
 
+##dbSNP ENTRY CLASS------------------------------------------------------------------------##
+## Holds information for a given SNP gotten from dbSNP.
+##-----------------------------------------------------------------------------------------##
 class dbSNP_Entry():
 ## Makes sure any inconsistent formatting does not make the program crash    
     def set_self(self,records):
@@ -60,8 +65,9 @@ class dbSNP_Entry():
         data = '\t'.join(self.__dict__.values())
         return str(data)
 
-##GWAS ENTRY CLASS--------------------------------------------------------------
-
+##GWAS ENTRY CLASS-------------------------------------------------------------------------##
+## Holds all the information for an SNP parsed from the GWAS Catalogue.
+##-----------------------------------------------------------------------------------------##    
 class GWAS_Entry:
 
     def __init__(self,data):   
@@ -84,8 +90,11 @@ class GWAS_Entry:
     def to_string(self):
         data = '\t'.join(self.__dict__.values())
         return str(data)
-
-##Builds a dictionary of SNP data with rsIDs as keys
+    
+##-----------------------------------------------------------------------------------------##
+## Takes a list of rsIDs from the GWAS_gen() function and builds a dictionary of SNP data
+## with the rsIDs as keys and a dbSNP Entry object as its corresponding value.
+##-----------------------------------------------------------------------------------------##
 def dbSNP_gen(rsIDs,email):
     dbSNP = {}
     myTime = 0
@@ -104,7 +113,11 @@ def dbSNP_gen(rsIDs,email):
     print 'Average dbSNP time: '+ str(float(myTime/i));
     return dbSNP
 
-##Builds a dictionary from the GWAS catalogue based on either gene name or rsID.
+##-----------------------------------------------------------------------------------------##
+## Builds a dictionary from the GWAS catalogue with keys as either gene name(s) or rsID.
+## Returns the GWAS dictionary object and a list of rsIDs that are fed into the dbSNP_gen()
+## function to generate the dbSNP dictionary object.
+##-----------------------------------------------------------------------------------------##
 def GWAS_gen(db_file,infile,filetype):
     GWAS = {}
     rsIDs = []
@@ -161,6 +174,10 @@ def GWAS_gen(db_file,infile,filetype):
     print 'rsID list lenght = ' + str(len(rsIDs))    
     return GWAS,rsIDs
 
+##----------------------------------------------------------------------------------------##
+## Calls the functions to generate a GWAS dictionary object and a dbSNP
+## dictionary object.
+##----------------------------------------------------------------------------------------##
 def Setup(db_file,infile,email,filetype):
     ifstream = open(infile)
     filecontent = ifstream.read()
@@ -175,6 +192,13 @@ def Setup(db_file,infile,email,filetype):
 
     return GWAS,dbSNP,rsIDs,filecontent
 
+##-----------------------------------------------------------------------------------------##
+## Output Function when the input file is an rsID list.
+## Generates the headers for the GWAS info and the dbSNP info and writes to the output file.
+## Then for every rsID parsed from the input file, the program checks to see if there is data
+## for that rsID in the GWAS dictionary and the dbSNP dictionary. If there is data for that
+## rsID the information is written to the output file.
+##-----------------------------------------------------------------------------------------##
 def rsID_output(GWAS,dbSNP,queries,outfile):
     ofstream = open(outfile, 'w')
 
@@ -204,6 +228,14 @@ def rsID_output(GWAS,dbSNP,queries,outfile):
             print "SNP data not found\n"
     ofstream.close()
 
+##-----------------------------------------------------------------------------------------##
+## Output function when the input file is a gene list.
+## Generates the headers for the GWAS info and the dbSNP info and writes to headers to the
+## output file. Then each key in the GWAS dictionary(the reported and mapped genes), the 
+## key is split into a list. This list is then checked against the gene list from the input
+## file. If the gene is in the list, the GWAS Catalogue data and the dbSNP data is written
+## to file for the rsid associated with that gene.
+##-----------------------------------------------------------------------------------------##
 def gene_output(GWAS,dbSNP,queries,outfile):
     ofstream = open(outfile, 'w')
     gk = Set(GWAS.keys())
@@ -235,20 +267,13 @@ def gene_output(GWAS,dbSNP,queries,outfile):
                 ofstream.write('\n')    
     ofstream.close()
 
-def header_gen(GWAS,dbSNP):
-    gHeader = '\t'.join(GWAS['HEADER'].__dict__.values())
-    sHeader = list(dbSNP.values()[0].__dict__.keys())
-    sHeader = '\t'.join(sHeader)
-    return gHeader,sHeader
-
+##-----------------------------------------------------------------------------------------##
+## Calls Setup() and either rsID_output() or gene_output() based on the flag passed from
+## run_main(). Returns the length of the file for testing purposes.
+##-----------------------------------------------------------------------------------------##
 def SNP_output(db_file,infile,email,filetype,outfile):
     
     (GWAS,dbSNP,rsIDs,queries) = Setup(db_file,infile,email,filetype)
-    (gHeader,sHeader) = header_gen(GWAS,dbSNP) 
-
-    ofstream = open(outfile, 'w')
-    ofstream.write('rsID' + '\t' + str(gHeader) + '\t' + str(sHeader) + '\n')
-    ofstream.close()   
     
     ## USING SNP LIST
     if filetype == True:
@@ -260,15 +285,11 @@ def SNP_output(db_file,infile,email,filetype,outfile):
 
     return len(queries)
 
+##-----------------------------------------------------------------------------------------##
+## Takes in the input file, GWAS Catalogue, email, output file, and flag for the file type.
+## Calls SNP_output() to write to the output file.
+##-----------------------------------------------------------------------------------------##
 def run_main():
-##
-##    infile = 'Test_SNP_List_lengths\\snp_2500.txt' #or use test_snplist.txt--only has 1 result
-##    genefile = 'input_files\\test_genelist.txt'
-##    outfile = 'test_SNP_2500.txt'
-##    email = 'atsueda@luc.edu'
-##    GWAS_db_file = 'input_files\\GWAS_DB_info.tsv'
-##
-##    myBool = True
 
     parser = argparse.ArgumentParser()
     parser.add_argument('input_file',help = 'ok')
@@ -292,14 +313,11 @@ def run_main():
 
     time1 = time.time()
     length = SNP_output(args.db_file,args.input_file,args.email,args.myBool,args.output_file)
-    
-##    length = SNP_output(GWAS_db_file,infile,email,myBool,outfile)
     time2 = time.time()
 
     print str((time2-time1)) + ': ' + str(length)
 
-##MAIN________________________________________________________________________________________
-
+##MAIN-------------------------------------------------------------------------------------##
 
 run_main()
 
